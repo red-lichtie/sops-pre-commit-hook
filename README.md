@@ -1,8 +1,12 @@
 # sops-pre-commit-hook
 
-Ensure that secrets are encrypted before commiting to git
+Ensure that secrets are encrypted using sops before commiting to git.
 
-* Uses the [pre-commit](https://pre-commit.com/) framework.
+## Links
+* Requires: [pre-commit](https://pre-commit.com/)
+* Requires: [sops](https://github.com/getsops)
+* [CNCF - sops](https://www.cncf.io/projects/sops/)
+* [CNCF - Landscape](https://landscape.cncf.io/)
 
 ## Configuration file `.sops.yaml` exists
 It looks for the sops configuration file `.sops.yaml` in the project root
