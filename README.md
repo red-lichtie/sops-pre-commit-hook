@@ -24,6 +24,7 @@ as having `kind: secret`, then they are evaluated.
 Enable this hook by adding this to your project's `.pre-commit-config.yaml`
 
 ```yaml
+repos:
 - repo: https://github.com/red-lichtie/sops-pre-commit-hook
   rev: v1.0.0
   hooks:
