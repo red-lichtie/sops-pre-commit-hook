@@ -1,0 +1,8 @@
+---
+- id: sops-pre-commit-hook
+  name: 'Ensure required files are encrypted with mozilla sops'
+  description: 'Uses rules defined in the repository to ensure that matching files are encrypted'
+  language: python
+  entry: sops_pre_commit_hook
+  types: [text]
+...
