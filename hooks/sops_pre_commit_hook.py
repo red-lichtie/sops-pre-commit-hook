@@ -17,22 +17,26 @@ CONFIG_CREATION_RULES = "creation_rules"
 CONFIG_PATH_REGEX = "path_regex"
 YAML_REGEX = r".*\.ya?ml"
 KIND_SECRET_REGEX = r"^kind:\ssecret$"
-SOPS_ENCRYPTED_REGEX = r"ENC.AES256"
+SOPS_ENCRYPTED_REGEX = r"ENC\[AES256"
 
-# Find ".sops.yaml" in the files tree
+# Find first ".sops.yaml" in the file's tree
 def get_sops_config_filename(dirname):
-#   Always check in project root first
-    if os.access(CONFIG_NAME, os.R_OK):
-        return CONFIG_NAME
-#   Go up the tree if not in root
-    dirname = os.path.dirname(dirname)
-    while dirname!="":
-        test = dirname+os.sep+CONFIG_NAME
-        if debug:
-            print("Test for {0}".format(test))
-        if os.access(test, os.R_OK):
-            return test
+    while True:
         dirname = os.path.dirname(dirname)
+#       No separator when top dir
+        if dirname != "":
+            test = dirname+os.sep+CONFIG_NAME
+        else:
+            test = CONFIG_NAME
+        if verbose:
+            print("Test: {0}".format(test))
+        if os.access(test, os.R_OK):
+            if verbose:
+                print("Found configuration: {0}".format(test))
+            return test
+#       If top dir and not found break
+        if dirname == "":
+            break
     return ""
 
 # Load ".sops.yaml" if found
@@ -51,6 +55,7 @@ def get_sops_config(filename):
         print("Loaded sops configuration from: {0}".format(configname))
     return True, sops_config
 
+# Check for ENC[AES256 in the file
 def is_encrypted(filename):
     if verbose:
         print("Check that file is encrypted {0}".format(filename))
@@ -64,6 +69,7 @@ def is_encrypted(filename):
         print("NOT encrypted: {}".format(filename))
     return False, "NOT encrypted: {}".format(filename)
 
+# Check for kubernetes kind:secret and ENC[AES256 in the file
 def is_encrypted_secret(filename):
     if debug:
         print("Check that file kind:secret and is encrypted {0}".format(filename))
@@ -79,10 +85,11 @@ def is_encrypted_secret(filename):
                     print("NOT encrypted: {0}".format(filename))
                 return False, "NOT encrypted: {0}".format(filename)
         else:
-            if debug:
+            if verbose:
                 print("OK: Not kind secret: {0}".format(filename))
             return True, "OK: Not kind secret: {0}".format(filename)
 
+# Check the sops status of a file
 def check_file(filename):
     sops_config_found, sops_config = get_sops_config(filename)
     if(sops_config_found):
@@ -93,16 +100,17 @@ def check_file(filename):
                 if re.findall(path_regex, filename, flags=re.IGNORECASE):
                     return is_encrypted(filename)
             else:
-                if debug:
+                if verbose:
                     print("OK: No regex defined for rule {0}: {1}".format(rule,filename))
 
     elif re.findall(YAML_REGEX, filename, flags=re.IGNORECASE):
         return is_encrypted_secret(filename)
 
-    if debug:
+    if verbose:
         print("OK: Not secret file: {0}".format(filename))
     return True, "OK: Not secret file: {0}".format(filename)
 
+# The files to check are passed as command line arguments
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+')
