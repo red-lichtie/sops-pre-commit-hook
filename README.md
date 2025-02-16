@@ -30,7 +30,7 @@ Enable this hook by adding this to your project's `.pre-commit-config.yaml`
 ```yaml
 repos:
 - repo: https://github.com/red-lichtie/sops-pre-commit-hook
-  rev: v1.0.0
+  rev: v1.1.1
   hooks:
     - id: sops-pre-commit-hook
 ```
