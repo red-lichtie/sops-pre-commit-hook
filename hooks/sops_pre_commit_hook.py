@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import sys
 import os
 import re
 from ruamel.yaml import YAML
