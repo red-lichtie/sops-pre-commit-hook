@@ -4,38 +4,20 @@ from __future__ import print_function
 import argparse
 import os
 import re
-import sys
-
 from ruamel.yaml import YAML
 from ruamel.yaml.parser import ParserError
 
 yaml = YAML(typ='safe')
 
+verbose = False
+debug = False
+
 CONFIG_NAME = ".sops.yaml"
 CONFIG_CREATION_RULES = "creation_rules"
 CONFIG_PATH_REGEX = "path_regex"
-KEY_ENCRYPTED_REGEX = "encrypted_regex"
 YAML_REGEX = r".*\.ya?ml"
 KIND_SECRET_REGEX = r"^kind:\ssecret$"
 SOPS_ENCRYPTED_REGEX = r"ENC\[AES256"
-
-match os.getenv('SOPS_PRE_COMMIT_HOOK_OUTPUT_LEVEL'):
-    case "verbose":
-        verbose = True
-        debug = True
-        trace = True
-    case "debug":
-        verbose = False
-        debug = True
-        trace = True
-    case "trace":
-        verbose = False
-        debug = False
-        trace = True
-    case _:
-        verbose = False
-        debug = False
-        trace = False
 
 # Find first ".sops.yaml" in the file's tree
 def get_sops_config_filename(dirname):
@@ -73,36 +55,8 @@ def get_sops_config(filename):
         print(f"Loaded sops configuration from: {configname}")
     return True, sops_config
 
-# Check to see if any of the keys match a required encrypted_regex
-def has_unencrypted_key(leaf,key_regex):
-    if isinstance(leaf, dict):
-        for k, v in leaf.items():
-            # Is the value a dictionary, then check the contents
-            if isinstance(v, dict):
-                unencrypted_key, message = has_unencrypted_key(v,key_regex)
-                if unencrypted_key:
-                    return unencrypted_key, message
-            elif isinstance(v, list):
-                # Is the value a list, then check the contents
-                for listItem in v:
-                    if not isinstance(listItem, str):
-                        unencrypted_key, message = has_unencrypted_key(listItem,key_regex)
-                        if unencrypted_key:
-                            return unencrypted_key, message
-            else:
-                if not isinstance(v, str) and not isinstance(v, bool) and not isinstance(v, int) and v is not None:
-                    print (f"UNHANDLED TYPE => Key: {k} = {type(v)} = {v}")
-                if isinstance(k, str):
-                    if re.findall( key_regex, k):
-                        print(f"MATCH FOUND - {k}: {v}")
-    else:
-        if leaf is not None:
-            print (f"leaf is a {type(leaf)} = {leaf}")
-
-    return False, f"Matching key NOT found"
-
 # Check for ENC[AES256 in the file
-def is_encrypted(filename,key_regex):
+def is_encrypted(filename):
     if verbose:
         print(f"Check that file is encrypted {filename}")
     with open(filename, mode="r") as f:
@@ -111,28 +65,6 @@ def is_encrypted(filename,key_regex):
             if debug:
                 print(f"OK: File is encrypted: {filename}")
             return True, f"OK: File is encrypted: {filename}"
-
-    # Are keys defined for the file match too?
-    if key_regex != None:
-        if debug:
-            print(f"Check {filename} for YAML keys identified by key_regex {key_regex}")
-        try:
-            with open(filename, mode="r") as fYaml:
-                documents = yaml.load_all(fYaml)
-                for document in documents:
-                    if verbose:
-                        print(f"document: {document}")
-                    unencrypted_key, message = has_unencrypted_key(document,key_regex)
-                    if unencrypted_key:
-                        if debug:
-                            print(f"Key found and NOT encrypted: {filename}")
-                        return False, f"Key found and NOT encrypted: {filename}"
-                return True, f"OK: File encryption not required: {filename}"
-        except ParserError:
-            if debug:
-                print(f"NOT YAML and NOT encrypted: {filename}")
-            return False, f"NOT YAML and NOT encrypted: {filename}"
-
     if debug:
         print(f"NOT encrypted: {filename}")
     return False, f"NOT encrypted: {filename}"
@@ -166,8 +98,7 @@ def check_file(filename):
             path_regex = rule.get(CONFIG_PATH_REGEX)
             if path_regex:
                 if re.findall(path_regex, filename, flags=re.IGNORECASE):
-                    path_regex = rule.get(KEY_ENCRYPTED_REGEX)
-                    return is_encrypted(filename,path_regex)
+                    return is_encrypted(filename)
             else:
                 if verbose:
                     print(f"OK: No regex defined for rule {rule}: {filename}")
@@ -186,9 +117,6 @@ def main(argv=None):
     args = parser.parse_args()
 
     failed_messages = []
-
-    # if trace:
-    #     print(f"Check: {args.filenames}")
 
     for f in args.filenames:
         is_valid, message = check_file(f)

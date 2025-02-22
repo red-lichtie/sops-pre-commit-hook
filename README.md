@@ -16,13 +16,6 @@ If this file is found and it contains `creation_rules`, then the value of
 `path_regex` for each of the defined rules is used to check if a file should
 be encrypted or not.
 
-If a file matches a `path_regex` and its not encrypted, then `encrypted_regex`
-is used to determine if a **YAML** file has a matching `${KEY}:`.
-
-* Again, if `encrypted_regex` is **NOT** defined then the file will be **FLAGGED**.
-* If it is **NOT** a YAML file or there **IS** a matching `${KEY}:` then file is **FLAGGED**.
-* If it is a YAML file or there is no matching `${KEY}:`, the file is **NOT** flagged.
-
 If a file name doesn't match any of the defined values for `path_regex` it
 will **NOT** be evaluated.
 
@@ -37,7 +30,7 @@ Enable this hook by adding this to your project's `.pre-commit-config.yaml`
 ```yaml
 repos:
 - repo: https://github.com/red-lichtie/sops-pre-commit-hook
-  rev: v1.2.0
+  rev: v1.1.1
   hooks:
     - id: sops-pre-commit-hook
 ```
