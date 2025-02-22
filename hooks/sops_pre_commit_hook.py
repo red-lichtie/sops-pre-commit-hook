@@ -9,15 +9,23 @@ from ruamel.yaml.parser import ParserError
 
 yaml = YAML(typ='safe')
 
-verbose = False
-debug = False
-
 CONFIG_NAME = ".sops.yaml"
 CONFIG_CREATION_RULES = "creation_rules"
 CONFIG_PATH_REGEX = "path_regex"
 YAML_REGEX = r".*\.ya?ml"
 KIND_SECRET_REGEX = r"^kind:\ssecret$"
 SOPS_ENCRYPTED_REGEX = r"ENC\[AES256"
+
+match os.getenv('SOPS_PRE_COMMIT_HOOK_OUTPUT_LEVEL'):
+    case "verbose":
+        verbose = True
+        debug = True
+    case "debug":
+        verbose = False
+        debug = True
+    case _:
+        verbose = False
+        debug = False
 
 # Find first ".sops.yaml" in the file's tree
 def get_sops_config_filename(dirname):
